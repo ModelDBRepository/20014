@@ -1,0 +1,70 @@
+// Transfer Properties of Neuronal Dendrites with Tonically Activated Conductances
+// S.M. Korogod, I.B. Kulagina, and S. Tyc-Dumont
+// Neirofiziologiya/Neurophysiology, Vol.30, Nos.4/5, pp.259-264, July-October, 1998
+// (Kluwer Academic/ Plenum Publishers English version: Neurophysiology 30(4/5):203-207, 1999)
+
+objectvar VRGraph
+
+// define membrane mechanisms
+proc SetMembrane() {
+  strdef OutLine
+  OutLine = "Soma {insert PasSA}"
+  execute1(OutLine)
+  OutLine = "Axon[0] {insert PasSA}"
+  execute1(OutLine)
+  for i=0, 7 {
+    for j=0, AllBranches.x[i]-1 {
+      sprint(OutLine, "Dendrite%d[%d] {insert PasS insert hh1}", i+1, j)
+      execute1(OutLine)
+    }
+  }
+} // SetMembrane()
+
+// make graphics for Fig.3. C
+proc MakeVRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  VRGraph = new Graph(0)
+  VRGraph.xaxis()
+  VRGraph.yaxis()
+  for i=0, DendriteNumber-1 {
+    for j=0, TermBranches[i].size()-1 {
+      RRGraph = new RangeVarPlot("v")
+      sprint(OutLine, "Dendrite%d[0] RRGraph.begin(0) Dendrite%d[%d] RRGraph.end(1)", i+1, i+1, TermBranches[i].x[j])
+      execute1(OutLine)
+      VRGraph.addobject(RRGraph, 1, 1, 1, 1)
+      route_distance = RRGraph.right() - RRGraph.left()
+      if (route_distance > max_distance) {
+        max_distance = route_distance
+      }
+    }
+  }
+  VRGraph.size(0, max_distance + 50, -55.0, -53.5)
+  VRGraph.view(-10, -55, 700, 1.5, 360, 270, 385, 385)
+  VRGraph.label(0.5, 1, "C", 2, 1, 0, 1, 1)
+  VRGraph.label(0.05, 1, "mV", 2, 1, 0, 1, 1)
+  VRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  VRGraph.yaxis(3)
+  VRGraph.xaxis(0, 700, -55, 7, 0, 0, 1)
+  VRGraph.yaxis(-55, -53.5, 0, 3, 0, 0, 1)
+  flush_list.append(VRGraph)
+  VRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeVRGraph()
+
+proc Destroy() {
+  VRGraph.unmap()
+} // Destroy()
+
+proc MainExec() {
+  GetModelTopology(2)
+  SetMembrane()
+  OutLine = "access Soma"
+  execute1(OutLine)
+  celcius = 6.3
+  tstop = 200
+  MakeVRGraph()
+} // MainExec()
+
+MainExec()

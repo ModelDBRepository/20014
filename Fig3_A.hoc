@@ -1,0 +1,81 @@
+// Transfer Properties of Neuronal Dendrites with Tonically Activated Conductances
+// S.M. Korogod, I.B. Kulagina, and S. Tyc-Dumont
+// Neirofiziologiya/Neurophysiology, Vol.30, Nos.4/5, pp.259-264, July-October, 1998
+// (Kluwer Academic/ Plenum Publishers English version: Neurophysiology 30(4/5):203-207, 1999)
+
+objectvar TRGraph
+objectvar Stim
+
+// define membrane mechanisms
+proc SetMembrane() {
+  strdef OutLine
+  OutLine = "Soma {insert PasSA g_PasSA = 0.00033}"
+  execute1(OutLine)
+  OutLine = "Axon[0] {insert PasSA g_PasSA = 0.00033}"
+  execute1(OutLine)
+  for i=0, 7 {
+    for j=0, AllBranches.x[i]-1 {
+      sprint(OutLine, "Dendrite%d[%d] {insert PasD g_PasD = 0.00033 gs_PasD = 0.0}", i+1, j)
+      execute1(OutLine)
+    }
+  }
+} // SetMembrane()
+
+func CalcT() { local T
+  T = (v($1) - erev_PasD($1)) / 10
+  return T
+} // CalcT()
+
+// make graphics for Fig.3. A
+proc MakeTRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  TRGraph = new Graph(0)
+  TRGraph.xaxis()
+  TRGraph.yaxis()
+  for i=0, DendriteNumber-1 {
+    for j=0, TermBranches[i].size()-1 {
+      RRGraph = new RangeVarPlot("CalcT($1)")
+      sprint(OutLine, "Dendrite%d[0] RRGraph.begin(0) Dendrite%d[%d] RRGraph.end(1)", i+1, i+1, TermBranches[i].x[j])
+      execute1(OutLine)
+      TRGraph.addobject(RRGraph, 1, 1, 2, 2)
+      route_distance = RRGraph.right() - RRGraph.left()
+      if (route_distance > max_distance) {
+        max_distance = route_distance
+      }
+    }
+  }
+  TRGraph.size(0, max_distance + 50, 0, 1)
+  TRGraph.view(0, 0, 700, 1, 360, 269, 385, 385)
+  TRGraph.label(0.5, 1, "A", 2, 1, 0, 1, 1)
+  TRGraph.label(0.05, 1, "T(x)", 2, 1, 0, 1, 1)
+  TRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  flush_list.append(TRGraph)
+  TRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeTRGraph()
+
+proc Destroy() {
+  objectvar Stim
+  TRGraph.unmap()
+} // Destroy()
+
+proc MainExec() {
+  GetModelTopology(2)
+  SetMembrane()
+  OutLine = "access Soma"
+  execute1(OutLine)
+  OutLine = "Soma Stim = new IClamp(1)"
+  execute1(OutLine)
+  OutLine = "Stim.del = 0"
+  execute1(OutLine)
+  OutLine = "Stim.dur = 100"
+  execute1(OutLine)
+  OutLine = "Stim.amp = 1.153"
+  execute1(OutLine)
+  tstop = 50
+  MakeTRGraph()
+} // MainExec()
+
+MainExec()

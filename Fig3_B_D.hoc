@@ -1,0 +1,113 @@
+// Transfer Properties of Neuronal Dendrites with Tonically Activated Conductances
+// S.M. Korogod, I.B. Kulagina, and S. Tyc-Dumont
+// Neirofiziologiya/Neurophysiology, Vol.30, Nos.4/5, pp.259-264, July-October, 1998
+// (Kluwer Academic/ Plenum Publishers English version: Neurophysiology 30(4/5):203-207, 1999)
+
+objectvar VRGraph, IRGraph
+
+// define membrane mechanisms
+proc SetMembrane() {
+  strdef OutLine
+  OutLine = "Soma {insert PasSA}"
+  execute1(OutLine)
+  OutLine = "Axon[0] {insert PasSA}"
+  execute1(OutLine)
+  for i=0, 7 {
+    for j=0, AllBranches.x[i]-1 {
+      sprint(OutLine, "Dendrite%d[%d] {insert PasD}", i+1, j)
+      execute1(OutLine)
+    }
+  }
+} // SetMembrane()
+
+// make graphics for Fig.3. B
+proc MakeVRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  VRGraph = new Graph(0)
+  VRGraph.xaxis()
+  VRGraph.yaxis()
+  for i=0, DendriteNumber-1 {
+    for j=0, TermBranches[i].size()-1 {
+      RRGraph = new RangeVarPlot("v")
+      sprint(OutLine, "Dendrite%d[0] RRGraph.begin(0) Dendrite%d[%d] RRGraph.end(1)", i+1, i+1, TermBranches[i].x[j])
+      execute1(OutLine)
+      VRGraph.addobject(RRGraph, 1, 1, 1, 1)
+      route_distance = RRGraph.right() - RRGraph.left()
+      if (route_distance > max_distance) {
+        max_distance = route_distance
+      }
+    }
+  }
+  VRGraph.size(0, max_distance + 50, -42, -36)
+  VRGraph.view(-10, -42, 700, 6, 90, 270, 385, 385)
+  VRGraph.label(0.5, 1, "B", 2, 1, 0, 1, 1)
+  VRGraph.label(0.05, 1, "mV", 2, 1, 0, 1, 1)
+  VRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  VRGraph.label(0.9, 0.95, "E", 2, 1, 0, 1, 1)
+  VRGraph.yaxis(3)
+  VRGraph.xaxis(0, 700, -42, 7, 0, 0, 1)
+  VRGraph.yaxis(-42, -36, 0, 6, 0, 0, 1)
+  flush_list.append(VRGraph)
+  VRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeVRGraph()
+
+func CalcI() { local Gm, Eq, Jm, Im // 0.01*pA/um
+  Gm = gs_PasD($1) + g_PasD($1)
+  Eq = ((gs_PasD($1) / Gm) * es_PasD($1)) + ((g_PasD($1) / Gm) * erev_PasD($1))
+  Jm = (Gm * (v($1) - Eq)) * 1000
+  Im = -(PI * diam($1) * Jm)
+  return Im
+} // CalcI()
+
+// make graphics for Fig.3. D
+proc MakeIRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  IRGraph = new Graph(0)
+  IRGraph.xaxis()
+  IRGraph.yaxis()
+  for i=0, DendriteNumber-1 {
+    for j=0, TermBranches[i].size()-1 {
+      RRGraph = new RangeVarPlot("CalcI($1)")
+      sprint(OutLine, "Dendrite%d[0] RRGraph.begin(0) Dendrite%d[%d] RRGraph.end(1)", i+1, i+1, TermBranches[i].x[j])
+      execute1(OutLine)
+      IRGraph.addobject(RRGraph, 1, 1, 1, 1)
+      route_distance = RRGraph.right() - RRGraph.left()
+      if (route_distance > max_distance) {
+        max_distance = route_distance
+      }
+    }
+  }
+  IRGraph.size(0, max_distance + 50, 0, 25)
+  IRGraph.view(0, 0, 700, 25, 625, 270, 385, 385)
+  IRGraph.label(0.5, 1, "D", 2, 1, 0, 1, 1)
+  IRGraph.label(0.05, 1, "0.01 pA/um", 2, 1, 0, 1, 1)
+  IRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  IRGraph.yaxis(3)
+  IRGraph.xaxis(0, 700, 0, 7, 0, 0, 1)
+  IRGraph.yaxis(0, 25, 0, 5, 0, 0, 1)
+  flush_list.append(IRGraph)
+  IRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeIRGraph()
+
+proc Destroy() {
+  VRGraph.unmap()
+  IRGraph.unmap()
+} // Destroy()
+
+proc MainExec() {
+  GetModelTopology(2)
+  SetMembrane()
+  OutLine = "access Soma"
+  execute1(OutLine)
+  tstop = 80
+  MakeVRGraph()
+  MakeIRGraph()
+} // MainExec()
+
+MainExec()

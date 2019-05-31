@@ -1,0 +1,275 @@
+strdef ArticleLabel1, ArticleLabel2, ArticleLabel3, ArticleLabel4
+ArticleLabel1 = "Transfer Properties of Neuronal Dendrites with Tonically Activated Conductances"
+ArticleLabel2 = "Sergey M. Korogod, Irina B. Kulagina, and Suzanne Tyc-Dumont"
+ArticleLabel3 = "Neirofiziologiya/Neurophysiology, Vol.30, Nos.4/5, pp.259-264, July-October, 1998"
+ArticleLabel4 = "Kluwer Academic/ Plenum Publishers English version: Neurophysiology 30(4/5):203-207, 1999"
+
+objref tempobj
+objectvar AllBranches
+AllBranches = new Vector(8, 0) // number of branches for all dendrites
+objectvar TermBranches[8]      // numbers of terminal branches for all dendrites
+
+{
+  load_file("stdgui.hoc")
+  load_file("electrod.hoc")
+  load_file("showmech.hoc")
+  load_file("pointman.hoc")
+}
+
+proc MainPanel() {
+   xpanel("Article Results")
+   xvarlabel(ArticleLabel1)
+   xvarlabel(ArticleLabel2)
+   xvarlabel(ArticleLabel3)
+   xvarlabel(ArticleLabel4)
+   xlabel("")
+   xbutton("Fig.2. A-D", "Main(1)")
+   xbutton("Fig.2. E-H", "Main(2)")
+   xbutton("Fig.3. A", "Main(3)")
+   xbutton("Fig.3. B, D", "Main(4)")
+   xbutton("Fig.3. C", "Main(5)")
+   xlabel("")
+   xpanel(410, 0)
+} // MainPanel()
+
+// numbers of terminal branches for one-dendrite model
+proc OneDendTermBranches() {
+  TermBranches[0] = new Vector(4)
+  TermBranches[0].x[0] = 2
+  TermBranches[0].x[1] = 3
+  TermBranches[0].x[2] = 5
+  TermBranches[0].x[3] = 6
+} // OneDendTermBranches()
+
+// numbers of terminal branches for eight-dendrites model
+proc AllDendTermBranches() {
+  TermBranches[0] = new Vector(15)
+  TermBranches[0].x[0] = 5
+  TermBranches[0].x[1] = 6
+  TermBranches[0].x[2] = 7
+  TermBranches[0].x[3] = 10
+  TermBranches[0].x[4] = 11
+  TermBranches[0].x[5] = 15
+  TermBranches[0].x[6] = 16
+  TermBranches[0].x[7] = 18
+  TermBranches[0].x[8] = 19
+  TermBranches[0].x[9] = 21
+  TermBranches[0].x[10] = 22
+  TermBranches[0].x[11] = 25
+  TermBranches[0].x[12] = 26
+  TermBranches[0].x[13] = 27
+  TermBranches[0].x[14] = 28
+  TermBranches[1] = new Vector(9)
+  TermBranches[1].x[0] = 3
+  TermBranches[1].x[1] = 5
+  TermBranches[1].x[2] = 6
+  TermBranches[1].x[3] = 8
+  TermBranches[1].x[4] = 9
+  TermBranches[1].x[5] = 12
+  TermBranches[1].x[6] = 14
+  TermBranches[1].x[7] = 15
+  TermBranches[1].x[8] = 16
+  TermBranches[2] = new Vector(3)
+  TermBranches[2].x[0] = 2
+  TermBranches[2].x[1] = 3
+  TermBranches[2].x[2] = 4
+  TermBranches[3] = new Vector(4)
+  TermBranches[3].x[0] = 2
+  TermBranches[3].x[1] = 3
+  TermBranches[3].x[2] = 5
+  TermBranches[3].x[3] = 6
+  TermBranches[4] = new Vector(1)
+  TermBranches[4].x[0] = 0
+  TermBranches[5] = new Vector(9)
+  TermBranches[5].x[0] = 2
+  TermBranches[5].x[1] = 5
+  TermBranches[5].x[2] = 6
+  TermBranches[5].x[3] = 8
+  TermBranches[5].x[4] = 9
+  TermBranches[5].x[5] = 12
+  TermBranches[5].x[6] = 14
+  TermBranches[5].x[7] = 15
+  TermBranches[5].x[8] = 16
+  TermBranches[6] = new Vector(3)
+  TermBranches[6].x[0] = 2
+  TermBranches[6].x[1] = 3
+  TermBranches[6].x[2] = 4
+  TermBranches[7] = new Vector(1)
+  TermBranches[7].x[0] = 0
+} // AllDendTermBranches()
+
+objectvar InFile
+InFile = new File()
+
+objectvar RRGraph
+
+// load morphology and topology of the model
+proc GetModelTopology() {
+  strdef InFileName, InLine, OutLine
+  strdef CommentSign, ObjectTitle
+
+  ObjectNo = -1
+  DendriteNumber = 0
+  TotalBranchNumber = 0
+  TotalPointNumber = 0
+  BranchNumber = 0
+  BranchNo = 0
+  PointNumber = 0
+  ParentNo = -1
+  X = 0.0
+  Y = 0.0
+  Z = 0.0
+  Diameter = 0.0
+  SegNumber = 0
+
+  if ($1 == 1) {
+    InFileName = "vime_c_d.asc"
+  } else {
+    InFileName = "vime_c_n.asc"
+  }
+  InFile.ropen(InFileName)
+  InFile.gets(InLine) // read comment
+  InFile.gets(InLine) // read Soma headline
+  sscanf(InLine, "%s%d%d%s", CommentSign, &ObjectNo, &BranchNumber, ObjectTitle)
+  OutLine = "create Soma"
+  execute1(OutLine)
+  OutLine = "access Soma"
+  execute1(OutLine)
+  InFile.gets(InLine) // read Soma description
+  sscanf(InLine, "%s%d%d%d%d%s", CommentSign, &BranchNo, &PointNumber, &ParentNo, &SegNumber, ObjectTitle)
+  sprint(OutLine, "Soma { nseg=%d L=20 diam=22.5 insert PasSA}", SegNumber)
+  execute1(OutLine)
+  OutLine = "Soma { pt3dclear() }"
+  execute1(OutLine)
+  for i=1, PointNumber {
+    InFile.gets(InLine) // read X,Y,Z,Diameter for Soma point
+    sscanf(InLine, "%f%f%f%f", &X, &Y, &Z, &Diameter)
+    sprint(OutLine, "Soma { pt3dadd(%f, %f, %f, %f) }", X, Y, Z, Diameter)
+    execute1(OutLine)
+  }
+  InFile.gets(InLine) // read Dendrites headline
+  sscanf(InLine, "%s%d%d%d%s", CommentSign, &DendriteNumber, &TotalBranchNumber, &TotalPointNumber, ObjectTitle)
+  for i=1, DendriteNumber {
+    InFile.gets(InLine) // read Dendrite headline
+    sscanf(InLine, "%s%d%d%s", CommentSign, &ObjectNo, &BranchNumber, ObjectTitle)
+    if (ObjectNo == 0) {
+      DendriteNumber = DendriteNumber - 1 // !!!!! DendriteNumber - real number of dendrites without axon
+      sprint(OutLine, "create Axon[%d]", BranchNumber)
+      execute1(OutLine)
+    } else {
+      sprint(OutLine, "create Dendrite%d[%d]", ObjectNo, BranchNumber)
+      execute1(OutLine)
+      sprint(OutLine, "AllBranches.x[%d] = %d", ObjectNo-1, BranchNumber)
+      execute1(OutLine)
+    }
+    for j=1, BranchNumber {
+      InFile.gets(InLine) // read Dendrite branch headline
+      sscanf(InLine, "%s%d%d%d%d%s", CommentSign, &BranchNo, &PointNumber, &ParentNo, &SegNumber, ObjectTitle)
+      if (ObjectNo == 0) {
+        sprint(OutLine, "access Axon[%d]", j-1)
+      } else {
+        sprint(OutLine, "access Dendrite%d[%d]", ObjectNo, j-1)
+      }
+      execute1(OutLine)
+      if (ObjectNo == 0) {
+        sprint(OutLine, "Axon[%d] { nseg=%d L=100 diam=500 insert PasSA}", j-1, SegNumber)
+      } else {
+        sprint(OutLine, "Dendrite%d[%d] { nseg=%d L=100 diam=500}", ObjectNo, j-1, SegNumber)
+      }
+      execute1(OutLine)
+      if (ObjectNo == 0) {
+        sprint(OutLine, "Axon[%d] { pt3dclear() }", j-1)
+      } else {
+        sprint(OutLine, "Dendrite%d[%d] { pt3dclear() }", ObjectNo, j-1)
+      }
+      execute1(OutLine)
+      for k=1, PointNumber {
+        InFile.gets(InLine) // read X,Y,Z,Diameter for Dendrite branch point
+        sscanf(InLine, "%f%f%f%f", &X, &Y, &Z, &Diameter)
+        if (ObjectNo == 0) {
+          sprint(OutLine, "Axon[%d] { pt3dadd(%f, %f, %f, %f) }", j-1, X, Y, Z, Diameter)
+        } else {
+          sprint(OutLine, "Dendrite%d[%d] { pt3dadd(%f, %f, %f, %f) }",ObjectNo, j-1, X, Y, Z, Diameter)
+        }
+        execute1(OutLine)
+      }
+      if (ParentNo == 0) {
+        if (ObjectNo == 0) {
+          sprint(OutLine, "connect Axon[0](0),Soma(0)")
+        } else {
+          sprint(OutLine, "connect Dendrite%d[0](0),Soma(1)", ObjectNo)
+        }
+        execute1(OutLine)
+      } else {
+        if (ObjectNo == 0) {
+          sprint(OutLine, "connect Axon[%d](0),Axon[%d](1)", j-1, ParentNo-1)
+        } else {
+          sprint(OutLine, "connect Dendrite%d[%d](0),Dendrite%d[%d](1)", ObjectNo, j-1, ObjectNo, ParentNo-1)
+        }
+        execute1(OutLine)
+      }
+    }
+  }
+  InFile.close()
+  if (DendriteNumber == 1) {
+    OneDendTermBranches()
+  } else {
+    AllDendTermBranches()
+  }
+  define_shape()
+} // GetModelTopology()
+
+proc Destroy(){}
+
+proc CommonDestroy() { local i
+   objectvar graphList[n_graph_lists], graphItem, flush_list, fast_flush_list
+   for i=0,n_graph_lists-1 graphList[i] = new List(1)
+   flush_list = new List(1)
+   fast_flush_list = new List(1)
+
+   tempobj = new List("Inserter")
+   while (tempobj.count()) {
+      tempobj.object(0).v1.unmap()
+   }
+   tempobj = new List("Electrode")
+   while (tempobj.count()) {
+      tempobj.object(0).v1.unmap()
+   }
+   tempobj = new List("PointProcessManager")
+   while (tempobj.count()) {
+      tempobj.object(0).v1.unmap()
+   }
+   tempobj = new List("ShowMechanism")
+   while (tempobj.count()) {
+      tempobj.object(0).v1.unmap()
+   }
+} // CommonDestroy()
+
+proc Main() {
+
+  Destroy()
+  CommonDestroy()
+
+  objectvar save_window_[1], rvp_[1], scene_vector_[1], ocbox_[1]
+  objectvar ocbox_list_[1], scene_list_[1], scene_[1]
+
+  doEvents()
+
+  forall delete_section()
+  if ($1 == 1) {
+    xopen("Fig2_A_D.hoc")
+  } else if ($1 == 2) {
+    xopen("Fig2_E_H.hoc")
+  } else if ($1 == 3) {
+    xopen("Fig3_A.hoc")
+  } else if ($1 == 4) {
+    xopen("Fig3_B_D.hoc")
+  } else if ($1 == 5) {
+    xopen("Fig3_C.hoc")
+  }
+  forall Ra=100
+  finitialize()
+} // Main()
+
+nrncontrolmenu()
+MainPanel()

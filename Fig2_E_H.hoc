@@ -1,0 +1,221 @@
+// Transfer Properties of Neuronal Dendrites with Tonically Activated Conductances
+// S.M. Korogod, I.B. Kulagina, and S. Tyc-Dumont
+// Neirofiziologiya/Neurophysiology, Vol.30, Nos.4/5, pp.259-264, July-October, 1998
+// (Kluwer Academic/ Plenum Publishers English version: Neurophysiology 30(4/5):203-207, 1999)
+
+objectvar VRGraph, CRGraph, JRGraph, IRGraph
+
+// define membrane mechanisms
+proc SetMembrane() {
+  strdef OutLine
+  OutLine = "Soma {insert PasSA}"
+  execute1(OutLine)
+  OutLine = "Axon[0] {insert PasSA}"
+  execute1(OutLine)
+  for i=0, AllBranches.x[0]-1 {
+    sprint(OutLine, "Dendrite1[%d] {insert PasS insert hh1}", i)
+    execute1(OutLine)
+  }
+} // SetMembrane()
+
+func CalcEq() { local Gm, Eq
+  Gm = gs_PasS($1) + gl_hh1($1) + gna_hh1($1) + gk_hh1($1)
+  Eq = ((gs_PasS($1)/Gm)*es_PasS($1)) + ((gl_hh1($1)/Gm)*el_hh1($1)) + ((gna_hh1($1)/Gm)*ena($1)) + ((gk_hh1($1)/Gm)*ek($1))
+  return Eq
+} // CalcEq()
+
+// make graphics for Fig.2. E
+proc MakeVRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  VRGraph = new Graph(0)
+  VRGraph.xaxis()
+  VRGraph.yaxis()
+  for i=0, TermBranches[0].size()-1 {
+    RRGraph = new RangeVarPlot("v")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    VRGraph.addobject(RRGraph, 1, 1, 1, 1)
+    RRGraph = new RangeVarPlot("CalcEq($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    VRGraph.addobject(RRGraph, 3, 1, 1, 3)
+    route_distance = RRGraph.right() - RRGraph.left()
+    if (route_distance > max_distance) {
+      max_distance = route_distance
+    }
+  }
+  VRGraph.size(0, max_distance + 50, -70, -30)
+  VRGraph.view(0, -70, 541.0, 40, 268, 80, 300.0, 215.0)
+  VRGraph.label(0.5, 1, "E", 2, 1, 0, 1, 1)
+  VRGraph.label(0.05, 1, "mV", 2, 1, 0, 1, 1)
+  VRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  VRGraph.label(0.9, 0.95, "Eq", 2, 1, 0, 1, 3)
+  VRGraph.label(0.9, 0.85, "E", 2, 1, 0, 1, 1)
+  flush_list.append(VRGraph)
+  VRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeVRGraph()
+
+func CalcGs() { // mS/cm2
+  return gs_PasS($1) * 1000
+} // CalcGs()
+
+func CalcGl() { // mS/cm2
+  return gl_hh1($1) * 1000
+} // CalcGl()
+
+func CalcGNa() { // mS/cm2
+  return gna_hh1($1) * 1000
+} // CalcGNa()
+
+func CalcGK() { // mS/cm2
+  return gk_hh1($1) * 1000
+} // CalcGK()
+
+func CalcGm() { // mS/cm2
+  return ((gs_PasS($1) + gl_hh1($1) + gna_hh1($1) + gk_hh1($1)) * 1000)
+} // CalcGm()
+
+// make graphics for Fig.2. F
+proc MakeCRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  CRGraph = new Graph(0)
+  CRGraph.xaxis()
+  CRGraph.yaxis()
+  for i=0, TermBranches[0].size()-1 {
+    RRGraph = new RangeVarPlot("CalcGs($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    CRGraph.addobject(RRGraph, 2, 1, 1, 2)
+    RRGraph = new RangeVarPlot("CalcGl($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    CRGraph.addobject(RRGraph, 1, 1, 1, 1)
+    RRGraph = new RangeVarPlot("CalcGNa($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    CRGraph.addobject(RRGraph, 4, 1, 1, 4)
+    RRGraph = new RangeVarPlot("CalcGK($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    CRGraph.addobject(RRGraph, 7, 1, 1, 7)
+    RRGraph = new RangeVarPlot("CalcGm($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    CRGraph.addobject(RRGraph, 3, 1, 1, 3)
+    route_distance = RRGraph.right() - RRGraph.left()
+    if (route_distance > max_distance) {
+      max_distance = route_distance
+    }
+  }
+  CRGraph.size(0, max_distance + 50, 0, 0.3)
+  CRGraph.view(0, 0, 541.0, 0.3, 683, 80, 300.0, 215.0)
+  CRGraph.label(0.5, 1, "F", 2, 1, 0, 1, 1)
+  CRGraph.label(0.05, 1, "mS/cm2", 2, 1, 0, 1, 1)
+  CRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  CRGraph.label(0.9, 0.95, "Gm", 2, 1, 0, 1, 3)
+  CRGraph.label(0.9, 0.85, "Gs", 2, 1, 0, 1, 2)
+  CRGraph.label(0.9, 0.75, "Gl", 2, 1, 0, 1, 1)
+  CRGraph.label(0.9, 0.65, "GNa", 2, 1, 0, 1, 4)
+  CRGraph.label(0.9, 0.55, "GK", 2, 1, 0, 1, 7)
+  flush_list.append(CRGraph)
+  CRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeCRGraph()
+
+func CalcJm() { local Gm, Eq, Jm // uA/cm2
+  Gm = gs_PasS($1) + gl_hh1($1) + gna_hh1($1) + gk_hh1($1)
+  Eq = ((gs_PasS($1)/Gm)*es_PasS($1)) + ((gl_hh1($1)/Gm)*el_hh1($1)) + ((gna_hh1($1)/Gm)*ena($1)) + ((gk_hh1($1)/Gm)*ek($1))
+  Jm = (Gm * (v($1) - Eq)) * 1000
+  return Jm
+} // CalcJm()
+
+// make graphics for Fig.2. G
+proc MakeJRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  JRGraph = new Graph(0)
+  JRGraph.xaxis()
+  JRGraph.yaxis()
+  for i=0, TermBranches[0].size()-1 {
+    RRGraph = new RangeVarPlot("CalcJm($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    JRGraph.addobject(RRGraph, 1, 1, 1, 1)
+    route_distance = RRGraph.right() - RRGraph.left()
+    if (route_distance > max_distance) {
+      max_distance = route_distance
+    }
+  }
+  JRGraph.size(0, max_distance + 50, -4, -1)
+  JRGraph.view(0, -4, 541.0, 3, 268, 432, 300.0, 215.0)
+  JRGraph.label(0.5, 1, "G", 2, 1, 0, 1, 1)
+  JRGraph.label(0.05, 1, "uA/cm2", 2, 1, 0, 1, 1)
+  JRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  flush_list.append(JRGraph)
+  JRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeJRGraph()
+
+func CalcI() { local Gm, Eq, Jm, Im // 0.01*pA/um
+  Gm = gs_PasS($1) + gl_hh1($1) + gna_hh1($1) + gk_hh1($1)
+  Eq = ((gs_PasS($1)/Gm)*es_PasS($1)) + ((gl_hh1($1)/Gm)*el_hh1($1)) + ((gna_hh1($1)/Gm)*ena($1)) + ((gk_hh1($1)/Gm)*ek($1))
+  Jm = (Gm * (v($1) - Eq)) * 1000
+  Im = -(PI * diam($1) * Jm)
+  return Im
+} // CalcI()
+
+// make graphics for Fig.2. H
+proc MakeIRGraph() {
+  strdef OutLine
+  max_distance = 0
+  route_distance = 0
+  IRGraph = new Graph(0)
+  IRGraph.xaxis()
+  IRGraph.yaxis()
+  for i=0, TermBranches[0].size()-1 {
+    RRGraph = new RangeVarPlot("CalcI($1)")
+    sprint(OutLine, "Dendrite1[0] RRGraph.begin(0) Dendrite1[%d] RRGraph.end(1)", TermBranches[0].x[i])
+    execute1(OutLine)
+    IRGraph.addobject(RRGraph, 1, 1, 1, 1)
+    route_distance = RRGraph.right() - RRGraph.left()
+    if (route_distance > max_distance) {
+      max_distance = route_distance
+    }
+  }
+  IRGraph.size(0, max_distance + 50, 0, 50)
+  IRGraph.view(0, 0, 541.0, 50, 683, 432, 300.0, 215.0)
+  IRGraph.label(0.5, 1, "H", 2, 1, 0, 1, 1)
+  IRGraph.label(0.05, 1, "0.01 pA/um", 2, 1, 0, 1, 1)
+  IRGraph.label(0.9, 0.15, "um", 2, 1, 0, 1, 1)
+  flush_list.append(IRGraph)
+  IRGraph.save_name("flush_list.")
+  objectvar RRGraph
+} // MakeIRGraph()
+
+proc Destroy() {
+  VRGraph.unmap()
+  CRGraph.unmap()
+  JRGraph.unmap()
+  IRGraph.unmap()
+} // Destroy()
+
+proc MainExec() {
+  GetModelTopology(1)
+  SetMembrane()
+  OutLine = "access Soma"
+  execute1(OutLine)
+  celcius = 6.3
+  tstop = 70
+  MakeVRGraph()
+  MakeCRGraph()
+  MakeJRGraph()
+  MakeIRGraph()
+} // MainExec()
+
+MainExec()
